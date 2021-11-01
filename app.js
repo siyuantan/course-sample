@@ -25,6 +25,8 @@ app.get('/random-quote', (req, res) => {
   res.json({'quote': generatedQuote});
 });
 
+app.use('/', express.static(__dirname + '/workshop01'));
+
 app.listen(port, () => {
   console.log(`Example app listening at http://localhost:${port}`)
 })
