@@ -1,0 +1,25 @@
+# create docker network
+docker network create mynet
+
+# create docker volume
+docker volume create myvol
+
+# run the northwind-db:v1 in mynet with myvol
+docker run -d --name nwdb --network mynet -v myvol:/var/lib/mysql stackupiss/northwind-db:v1
+
+# go into container to run mysql
+docker exec -ti nwdb bash
+
+# open mysql with root and password
+mysql -uroot -p
+changeit
+
+# select db
+use northwind
+
+# select records from customers tbl
+select * from customers;
+
+# launch stackupiss/northwind-app:v1 in mynet
+docker run -d -p 8080:3000 -e DB_HOST=nwdb -e DB_USER=root -e DB_PASSWORD=changeit --name nwapp --network mynet stackupiss/northwind-app:v1
+
