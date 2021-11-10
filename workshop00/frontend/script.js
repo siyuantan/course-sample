@@ -1,7 +1,9 @@
+const hostnameAndPort = window.location.href
+
 // call web service
 async function getRandomQuote() {
     // put quote into html element
-    let response = await fetch('http://randomquotebackend-env.eba-5nhd7nd8.ap-southeast-1.elasticbeanstalk.com/random-quote');
+    let response = await fetch(`${hostnameAndPort}random-quote`);
     let data = await response.json();
     return data;
 };
