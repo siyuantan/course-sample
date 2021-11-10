@@ -1,0 +1,82 @@
+---
+# apiVersion: v1
+# kind: ConfigMap
+# metadata: 
+#   name: bggns-cm
+#   labels:
+#     app: bggns-app
+# data: 
+#   INSTANCE_NAME: name set from config map
+#   INSTANCE_HASH: 123xyz
+---
+apiVersion: apps/v1
+kind: Deployment 
+metadata:
+  name: bggns-deploy
+  labels:
+    app: bggns-app
+    tier: persistence
+spec:
+  replicas: 1
+  selector: 
+    matchLabels:
+      name: bggns-pod
+  template:
+    metadata:
+      name: bggns-pod
+      labels:
+        app: bggns-app
+        tier: persistence
+        name: bggns-pod
+    spec:
+      containers:
+      - name: bggns-container
+        image: stackupiss/bgg-database:v1
+        imagePullPolicy: IfNotPresent
+        ports: 
+        - containerPort: 3306
+        # env: 
+        # - name: INSTANCE_HASH
+        #   valueFrom:
+        #     fieldRef:
+        #       fieldPath: status.podIP
+        # envFrom:
+        # - configMapRef:
+        #     name: bggns-cm
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: bggdb-svc
+    labels:
+        app: bggns-app
+        tier: persistence
+spec:
+  type: ClusterIP
+  selector:
+      app: bggns-app
+      tier: persistence
+  ports:
+    - name: bggdb-svc-port # max 16 char
+      port: 3306
+      targetPort: 3306
+      # any request coming into 8080 will be redirected to 3000
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: bggns-pod
+  labels:
+    app: bggns-app
+#  namespace: myns
+spec:
+  containers:
+  - name: bggns-container
+    image: stackupiss/bgg-database:v1
+    imagePullPolicy: IfNotPresent
+    # ports: 
+    # - name: web
+    #   containerPort: 3000
+    # envFrom:
+    # - configMapRef: 
+    #    name: bggns-cm
