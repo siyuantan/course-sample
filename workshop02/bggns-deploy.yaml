@@ -40,12 +40,6 @@ spec:
       containers:
       - name: bggapp-container
         image: stackupiss/bgg-backend:v1
-        # imagePullPolicy: IfNotPresent
-        # env: 
-        # - name: INSTANCE_HASH
-        #   valueFrom:
-        #     fieldRef:
-        #       fieldPath: status.podIP
         envFrom:
         - configMapRef:
             name: bggns-cm
