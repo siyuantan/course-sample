@@ -35,6 +35,9 @@ spec:
         imagePullPolicy: IfNotPresent
         ports: 
         - containerPort: 3306
+        volumeMounts:
+        - name: bggdb-vol
+          mountPath: /var/lib/mysql
         # env: 
         # - name: INSTANCE_HASH
         #   valueFrom:
@@ -43,6 +46,10 @@ spec:
         # envFrom:
         # - configMapRef:
         #     name: bggns-cm
+      volumes: 
+      - name: bggdb-vol
+        persistentVolumeClaim:
+          claimName: bggdb-pvc
 ---
 apiVersion: v1
 kind: Service

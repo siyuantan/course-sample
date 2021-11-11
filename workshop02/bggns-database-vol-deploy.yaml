@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: 
+  name: bggdb-pvc
+  labels:
+    app: bgg-app
+    tier: Persistence
+spec:
+  storageClassName: do-block-storage
+  accessModes:
+  - ReadWriteOnce # allow only one node to mount this
+  resources: 
+    requests:
+      storage: 1Gi
