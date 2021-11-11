@@ -1,0 +1,206 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata: 
+  name: bggns-cm
+  labels:
+    app: bggns-app
+data: 
+  BGG_DB_HOST: bggdb-svc.bggns.svc.cluster.local
+  BGG_DB_USER: root
+
+---
+apiVersion: apps/v1
+kind: Deployment 
+metadata:
+  name: bggapp-deploy
+  labels:
+    app: bggnsv1-app
+    tier: backend
+    version: v1
+spec:
+  replicas: 1
+  minReadySeconds: 5
+  selector: 
+    matchLabels:
+      app: bggns-app
+      tier: backend
+      version: v1
+  # strategy:
+  #   type: RollingUpdate
+  #   rollingUpdate:
+  #     maxSurge: 25%
+  #     maxUnavailable: 25%
+  template:
+    metadata:
+      name: bggapp-pod
+      labels:
+        app: bggns-app
+        tier: backend
+        version: v1
+    spec:
+      containers:
+      - name: bggapp-container
+        image: stackupiss/bgg-backend:v1
+        args:
+        - --prefix
+        - /v1
+        envFrom:
+        - configMapRef:
+            name: bggns-cm
+        - secretRef:
+            name: bggns-secret
+        ports: 
+        - containerPort: 3000
+        livenessProbe: 
+          httpGet:
+            path: v1/healthz
+            port: 3000
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: bggappv1-svc
+    labels:
+        app: bggns-app
+spec:
+  type: ClusterIP
+  selector:
+      app: bggns-app
+      tier: backend
+      version: v1
+      # name: bggapp-deploy
+  ports:
+    - name: bggapp-svc-port # max 16 char
+      port: 8080
+      targetPort: 3000
+      # any request coming into 8080 will be redirected to 3000
+---
+apiVersion: apps/v1
+kind: Deployment 
+metadata:
+  name: bggappv2-deploy
+  labels:
+    app: bggns-app
+    tier: backend
+    version: v2
+spec:
+  replicas: 1
+  minReadySeconds: 5
+  selector: 
+    matchLabels:
+      app: bggns-app
+      tier: backend
+      version: v2
+  # strategy:
+  #   type: RollingUpdate
+  #   rollingUpdate:
+  #     maxSurge: 25%
+  #     maxUnavailable: 25%
+  template:
+    metadata:
+      name: bggapp-pod
+      labels:
+        app: bggns-app
+        tier: backend
+        version: v2
+    spec:
+      containers:
+      - name: bggapp-container
+        image: stackupiss/bgg-backend:v2
+        args:
+        - --prefix
+        - /v2
+        envFrom:
+        - configMapRef:
+            name: bggns-cm
+        - secretRef:
+            name: bggns-secret
+        ports: 
+        - containerPort: 3000
+        livenessProbe: 
+          httpGet:
+            path: /v2/healthz
+            port: 3000
+        resources:
+          requests:
+            cpu: 50m
+            memory: 96Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: bggappv2-svc
+    labels:
+        app: bggns-app
+spec:
+  type: ClusterIP
+  selector:
+      app: bggns-app
+      tier: backend
+      version: v2
+  ports:
+    - name: bggapp-svc-port # max 16 char
+      port: 8080
+      targetPort: 3000
+      # any request coming into 8080 will be redirected to 3000
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: bgg-ing
+spec: 
+  ingressClassName: nginx
+  rules:
+    - host: bgg-144.126.243.118.nip.io
+      http:
+        paths:
+        - path: /v1
+          pathType: Prefix
+          backend:
+            service:
+              name: bggappv1-svc
+              port: 
+                name: bggapp-svc-port
+        - path: /v2
+          pathType: Prefix
+          backend:
+            service:
+              name: bggappv2-svc
+              port: 
+                name: bggapp-svc-port
+---
+apiVersion: autoscaling/v2beta2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: bggappv1-hpa
+  labels:
+    app: bgg
+    tier: backend
+    version: v1
+spec:
+  minReplicas: 1
+  maxReplicas: 4
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: bggappv2-deploy
+  metrics: # can get custom metrics from other 3rd party libraries
+  - type: Resource
+    resource: 
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource: 
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
