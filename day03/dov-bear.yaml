@@ -1,0 +1,88 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dov-cm
+  labels:
+    app: dov-bear
+data:
+  INSTANCE_NAME: dov-bear
+  abc: |
+    one
+    two
+    three
+
+---
+apiVersion: apps/v1
+kind: Deployment 
+metadata:
+  name: dov-deploy
+  labels:
+    app: dov-bear
+spec:
+  replicas: 2
+  selector: 
+    matchLabels:
+      name: dov-pod
+  template:
+    metadata:
+      name: dov-pod
+      labels:
+        app: dov-bear
+        name: dov-pod
+    spec:
+      containers:
+      - name: dov-container
+        image: stackupiss/dov-bear:v2 
+        imagePullPolicy: IfNotPresent
+        ports: 
+        - containerPort: 3000
+        env: 
+        - name: INSTANCE_HASH
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        envFrom:
+        - configMapRef:
+            name: dov-cm
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: dov-svc
+    labels:
+        app: dov-bear
+        owner: fred
+        dept: enggg
+spec:
+  type: ClusterIP
+  selector:
+      app: dov-bear
+      name: dov-pod
+  ports:
+    - name: dov-svc-port # max 16 char
+      port: 8080
+      targetPort: 3000
+      # any request coming into 8080 will be redirected to 3000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: dov-ing
+  labels: 
+    app: dov-bear
+spec: 
+  ingressClassName: nginx
+  rules:
+  - host: dov-bear-144.126.243.118.nip.io
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: dov-svc
+            port: 
+              name: dov-svc-port
+            # number: 8080
+          
