@@ -1,0 +1,17 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nwapp
+spec:
+  template: # notice it skips alot of field, until the one u want to change
+    spec:
+      containers:
+        - name: northwind-app # unique container identifier
+          # newly added
+          resources: 
+            requests:
+              cpu: 256m
+              memory: 500Mi
+            limits:
+              cpu: 512m
+              memory: 1Gi

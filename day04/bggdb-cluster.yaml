@@ -1,0 +1,29 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: bggdb-secret
+  labels:
+    app: bgg
+type: Opaque
+data:
+  ROOT_PASSWORD: Y2hhbmdlaXQ=
+---
+apiVersion: mysql.presslabs.org/v1alpha1
+kind: MysqlCluster # from CRD for mysql operator
+metadata:
+  name: bggdb-cluster
+  labels:
+    app: bgg
+spec:
+  replicas: 2
+  secretName: bggdb-secret
+  image: stackupiss/northwind-db:v1
+
+  persistentVolumeClaim:
+    accessModes: 
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: 1Gi
+    storageClassName: do-block-storage
