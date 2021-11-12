@@ -1,0 +1,29 @@
+apiVersion: mysql.presslabs.org/v1alpha1
+kind: MysqlCluster # from CRD for mysql operator
+metadata:
+  name: wpdb-cluster
+  labels:
+    app: wpdb-cluster
+spec:
+  replicas: 2
+  secretName: wpdb-secret
+
+  volumeSpec:
+    persistentVolumeClaim:
+      accessModes: 
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Gi
+      storageClassName: do-block-storage
+---
+apiVersion: mysql.presslabs.org/v1alpha1
+kind: MysqlDatabase
+metadata:
+  name: wpdb-db
+  labels:
+    name: wpdb-db
+spec:
+  database: wpdb
+  clusterRef:
+      name: wpdb-cluster
